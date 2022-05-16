@@ -271,7 +271,7 @@ missing_values_table(df)
 
 def fill_missing_na(df, cat_length, target='SalePrice', num=True, obj=True):
   object_cols = [col for col in df.columns if (df[col].isnull().sum() > 0) & (df[col].dtype == "O")]
-  num_cols = [col for col in df.columns if (df[col].isnull().sum() > 0) & (df[col].dtype != "O") & (col not in target)]
+  num_cols = [col for col in df.columns if (df[col].isnull().sum() > 0) & (df[col].dtype != "O")]# & (col not in target)]
   temp_target = df[target]
   print('Categorical cols:\n', object_cols, '\n')
   print('Numeric cols:\n', num_cols, '\n')
@@ -291,7 +291,9 @@ def fill_missing_na(df, cat_length, target='SalePrice', num=True, obj=True):
 
   return df
 
-fill_missing_na(df, 20)
+df = fill_missing_na(df, 20)
+
+df.head()
 
 missing_values_table(df)
 
@@ -593,17 +595,22 @@ df["new_RestorationAge"] = df.YrSold - df.YearRemodAdd
 df["new_GarageAge"] = df.GarageYrBlt - df.YearBuilt
 df["new_GarageSold"] = df.YrSold - df.GarageYrBlt
 
+df = fill_missing_na(df, 20)
+
+missing_values_table(df)
+
 # Kolonlardaki boşlukların "No" ifadesi ile doldurulması
-for col in no_cols:
-    df[col].fillna("No",inplace=True)
+#for col in no_cols:
+#    df[col].fillna("No",inplace=True)
 
-missing_values_table(df)
+#missing_values_table(df)
 
-fill_missing_na(df, 20)
-
-missing_values_table(df)
-
-df.isnull().sum()
+#zero_cols = ["new_AllBath_Up", "new_TotRmsAbvGrdWithBath"]
+#for col in zero_cols:
+#    df = df[col].fillna(df.mean(), inplace=True)
+# df = df.apply(lambda x: x.fillna(x.mean()) if x.dtype != "O" else x, axis=0)
+#df = fill_missing_na(df, 20)
+#missing_values_table(df)
 
 # GarageQual: Garaj kalitesi
 # GarageCond: Garaj durumu
@@ -616,7 +623,13 @@ df["LotShape"].value_counts()
 df.loc[(df["LotShape"] == "IR2"), "LotShape"] = "IR1"
 df.loc[(df["LotShape"] == "IR3"), "LotShape"] = "IR1"
 
+df.isnull().sum()
+
 df.shape
+
+df.isnull().sum()
+
+missing_values_table(df)
 
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder, StandardScaler, RobustScaler
@@ -624,6 +637,10 @@ from sklearn.preprocessing import MinMaxScaler, LabelEncoder, StandardScaler, Ro
 def label_encoder(dataframe, binary_col):
     labelencoder = LabelEncoder()
     dataframe[binary_col] = labelencoder.fit_transform(dataframe[binary_col])
+    return dataframe
+
+def one_hot_encoder(dataframe, categorical_cols, drop_first=False):
+    dataframe = pd.get_dummies(dataframe, columns=categorical_cols, drop_first=drop_first)
     return dataframe
 
 ##################
@@ -641,6 +658,8 @@ df = one_hot_encoder(df, cat_cols, drop_first=True)
 
 df.head()
 
+df.info()
+
 df.shape
 
 nan_cols = [col for col in df.columns if df[col].isnull().sum() > 0]
@@ -655,7 +674,9 @@ missing_values_table(df)
 
 df[nan_cols].info()
 
-df["LotFrontage"].dtype
+df["Neighborhood"].value_counts()
+
+df.drop("Neighborhood", axis=1, inplace=True)
 
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 
@@ -682,11 +703,31 @@ models = [('LR', LinearRegression()),
           ("XGBoost", XGBRegressor(objective='reg:squarederror')),
           ("LightGBM", LGBMRegressor())]
 
-df.dtypes
-
 for name, regressor in models:
     rmse = np.mean(np.sqrt(-cross_val_score(regressor, X, y, cv=5, scoring="neg_mean_squared_error")))
     print(f"RMSE: {round(rmse, 4)} ({name}) ")
+
+# RMSE: 10209325.8848 (LR) 
+# RMSE: 50066.4165 (Ridge) 
+# RMSE: 48027.4584 (ElasticNet) 
+# RMSE: 50641.8367 (KNN) 
+# RMSE: 64902.7055 (CART) 
+# RMSE: 51025.0239 (RF)
+# RMSE: 51179.4866 (GBM) 
+# RMSE: 50818.0795 (XGBoost) 
+# RMSE: 53077.0322 (LightGBM) 
+
+
+# RMSE: 135772067.8441 (LR)
+# RMSE: 23513.2685 (Ridge)
+# RMSE: 24449.7478 (Lasso)
+# RMSE: 26869.9511 (ElasticNet)
+# RMSE: 36225.8091 (KNN)
+# RMSE: 35694.1323 (CART)
+# RMSE: 24767.3153 (RF)
+# RMSE: 22774.9258 (GBM)
+# RMSE: 24659.0742 (XGBoost)
+# RMSE: 22581.9479 (LightGBM)
 
 ### Hyperparameter Optimization ###
 
